@@ -1,12 +1,6 @@
-<script>
-export default {
-  name: 'App'
-}
-</script>
-
 <template>
   <div class="container flex flex-col items-center p-4 mx-auto bg-gray-100">
-    <div
+    <!-- <div
       class="fixed inset-0 z-50 flex items-center justify-center bg-purple-800 w-100 h-100 opacity-80"
     >
       <svg
@@ -29,14 +23,17 @@ export default {
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
         ></path>
       </svg>
-    </div>
+    </div> -->
     <div class="container">
+      
       <section>
         <div class="flex">
           <div class="max-w-xs">
             <label for="wallet" class="block text-sm font-medium text-gray-700">Тикер</label>
             <div class="relative mt-1 rounded-md shadow-md">
               <input
+                v-model="ticker"
+                @keydown.enter="add"
                 type="text"
                 name="wallet"
                 id="wallet"
@@ -70,6 +67,7 @@ export default {
           </div>
         </div>
         <button
+          @click="add"
           type="button"
           class="inline-flex items-center px-4 py-2 my-4 text-sm font-medium leading-4 text-white transition-colors duration-300 bg-gray-600 border border-transparent rounded-full shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
         >
@@ -90,17 +88,23 @@ export default {
         </button>
       </section>
 
+       <template v-if="tickers.length">
+
       <hr class="w-full my-4 border-t border-gray-600" />
       <dl class="grid grid-cols-1 gap-5 mt-5 sm:grid-cols-3">
         <div
+          v-for = "t in tickers"
+          :key="t.name"
+          
           class="overflow-hidden bg-white border-purple-800 border-solid rounded-lg shadow cursor-pointer"
         >
           <div class="px-4 py-5 text-center sm:p-6">
-            <dt class="text-sm font-medium text-gray-500 truncate">WTF - USD</dt>
-            <dd class="mt-1 text-3xl font-semibold text-gray-900">1.11</dd>
+            <dt class="text-sm font-medium text-gray-500 truncate">{{t.name}}- USD</dt>
+            <dd class="mt-1 text-3xl font-semibold text-gray-900">{{ t.price }}</dd>
           </div>
           <div class="w-full border-t border-gray-200"></div>
           <buttons
+            @click="handleDelete(t)"
             class="flex items-center justify-center w-full px-4 py-4 font-medium text-gray-500 transition-all bg-gray-100 text-md hover:bg-gray-200 hover:text-gray-600 hover:opacity-20 focus:outline-none sm:px-6"
           >
             <svg
@@ -119,89 +123,10 @@ export default {
             >Удалить
           </buttons>
         </div>
-        <div
-          class="overflow-hidden bg-white border-4 border-purple-800 border-solid rounded-lg shadow cursor-pointer"
-        >
-          <div class="px-4 py-5 text-center sm:p-6">
-            <dt class="text-sm font-medium text-gray-500 truncate">VUE - RUB</dt>
-            <dd class="mt-1 text-3xl font-semibold text-gray-900">80000.00</dd>
-          </div>
-          <div class="w-full border-t border-gray-200"></div>
-          <button
-            class="flex items-center justify-center w-full px-4 py-4 font-medium text-gray-500 transition-all bg-gray-100 text-md hover:bg-gray-200 hover:text-gray-600 hover:opacity-20 focus:outline-none sm:px-6"
-          >
-            <svg
-              class="w-5 h-5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="#718096"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                clip-rule="evenodd"
-              ></path>
-            </svg>
-            >Удалить
-          </button>
-        </div>
-        <div
-          class="overflow-hidden bg-white border-purple-800 border-solid rounded-lg shadow cursor-pointer"
-        >
-          <div class="px-4 py-5 text-center sm:p-6">
-            <dt class="text-sm font-medium text-gray-500 truncate">BTC - USD</dt>
-            <dd class="mt-1 text-3xl font-semibold text-gray-900">99999.99</dd>
-          </div>
-          <div class="w-full border-t border-gray-200"></div>
-          <button
-            class="flex items-center justify-center w-full px-4 py-4 font-medium text-gray-500 transition-all bg-gray-100 text-md hover:bg-gray-200 hover:text-gray-600 hover:opacity-20 focus:outline-none sm:px-6"
-          >
-            <svg
-              class="w-5 h-5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="#718096"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                clip-rule="evenodd"
-              ></path>
-            </svg>
-            >Удалить
-          </button>
-        </div>
-        <div
-          class="overflow-hidden bg-white border-purple-800 border-solid rounded-lg shadow cursor-pointer"
-        >
-          <div class="px-4 py-5 text-center sm:p-6">
-            <dt class="text-sm font-medium text-gray-500 truncate">DOGE - USD</dt>
-            <dd class="mt-1 text-3xl font-semibold text-gray-900">0.0014</dd>
-          </div>
-          <div class="w-full border-t border-gray-200"></div>
-          <button
-            class="flex items-center justify-center w-full px-4 py-4 font-medium text-gray-500 transition-all bg-gray-100 text-md hover:bg-gray-200 hover:text-gray-600 hover:opacity-20 focus:outline-none sm:px-6"
-          >
-            <svg
-              class="w-5 h-5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="#718096"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                clip-rule="evenodd"
-              ></path>
-            </svg>
-            >Удалить
-          </button>
-        </div>
       </dl>
       <hr class="w-full my-4 border-t border-gray-600" />
+</template>
+
       <section class="relative">
         <h3 class="my-8 text-lg font-medium leading-6 text-gray-900">VUE - USD</h3>
         <div class="flex items-end h-64 border-b border-l border-gray-600">
@@ -210,7 +135,7 @@ export default {
           <div class="w-10 h-48 bg-purple-800 border"></div>
           <div class="w-10 h-16 bg-purple-800 border"></div>
         </div>
-        <button type="button" class="absolute top-0 right-0">
+        <button  type="button" class="absolute top-0 right-0">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -237,4 +162,39 @@ export default {
     </div>
   </div>
 </template>
+
+<script lang="ts">
+export default {
+  name: "App",
+
+  data() {
+    return {
+      ticker: "default",
+      tickers: [
+        { name: "DEMO1", price: "-" },
+        { name: "DEMO2", price: "2" },
+        { name: "DEMO3", price: "-" }
+      ]
+    };
+  },
+
+  methods: {
+    add() {
+      const newTicker = {
+        name: this.ticker,
+        price: "-"
+      };
+
+      this.tickers.push(newTicker);
+      this.ticker = "";
+    },
+
+    handleDelete(tickerToRemove:any) {
+      this.tickers = this.tickers.filter(t => t !== tickerToRemove);
+    }
+  }
+};
+</script>
 <!-- <style src="./app.css"></style> -->
+
+
