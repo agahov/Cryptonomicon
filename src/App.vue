@@ -25,6 +25,7 @@
       </svg>
     </div> -->
     <div class="container">
+      <button @click.stop="loadTikers"> show api</button>
       
       <section>
         <div class="flex">
@@ -95,6 +96,8 @@
         <div
           v-for = "t in tickers"
           :key="t.name"
+          @click="select(t)"
+          :class="{'border-4':sel===t}"
           
           class="overflow-hidden bg-white border-purple-800 border-solid rounded-lg shadow cursor-pointer"
         >
@@ -104,7 +107,7 @@
           </div>
           <div class="w-full border-t border-gray-200"></div>
           <buttons
-            @click="handleDelete(t)"
+            @click.stop="handleDelete(t)"
             class="flex items-center justify-center w-full px-4 py-4 font-medium text-gray-500 transition-all bg-gray-100 text-md hover:bg-gray-200 hover:text-gray-600 hover:opacity-20 focus:outline-none sm:px-6"
           >
             <svg
@@ -127,15 +130,18 @@
       <hr class="w-full my-4 border-t border-gray-600" />
 </template>
 
-      <section class="relative">
-        <h3 class="my-8 text-lg font-medium leading-6 text-gray-900">VUE - USD</h3>
+      <section v-if="sel" class="relative" >
+        <h3 class="my-8 text-lg font-medium leading-6 text-gray-900">{{sel.name}} - USD</h3>
         <div class="flex items-end h-64 border-b border-l border-gray-600">
-          <div class="w-10 h-24 bg-purple-800 border"></div>
-          <div class="w-10 h-32 bg-purple-800 border"></div>
-          <div class="w-10 h-48 bg-purple-800 border"></div>
-          <div class="w-10 h-16 bg-purple-800 border"></div>
+        <div
+            v-for="(bar, idx) in normalizeGraph()"
+            :key="idx"
+            :style="{ height: `${bar}%` }"
+            class="w-10 bg-purple-800 border"
+          ></div>
+
         </div>
-        <button  type="button" class="absolute top-0 right-0">
+        <button @click="sel = null" type="button" class="absolute top-0 right-0">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -163,7 +169,7 @@
   </div>
 </template>
 
-<script lang="ts">
+<script >
 export default {
   name: "App",
 
@@ -174,24 +180,61 @@ export default {
         { name: "DEMO1", price: "-" },
         { name: "DEMO2", price: "2" },
         { name: "DEMO3", price: "-" }
-      ]
+      ],
+      sel:null,
+      graph:[],
     };
   },
 
   methods: {
     add() {
-      const newTicker = {
+      const currentTicker = {
         name: this.ticker,
         price: "-"
       };
 
-      this.tickers.push(newTicker);
+      this.tickers.push(currentTicker);
+      setInterval(async () => {
+        const f = await fetch(
+          `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=${import.meta.env.VITE_CRYPTOCOMPARE_APIKEY}`
+        );
+        const data = await f.json();
+
+        // currentTicker.price =  data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+        this.tickers.find(t => t.name === currentTicker.name).price =
+          data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+
+        if (this.sel?.name === currentTicker.name) {
+          this.graph.push(data.USD);
+        }
+      }, 5000);
       this.ticker = "";
+
     },
 
-    handleDelete(tickerToRemove:any) {
+    handleDelete(tickerToRemove) {
       this.tickers = this.tickers.filter(t => t !== tickerToRemove);
+    },
+     select(ticker) {
+      this.sel = ticker;
+      this.graph = [];
+    },
+
+
+    normalizeGraph() {
+      const maxValue = Math.max(...this.graph);
+      const minValue = Math.min(...this.graph);
+      return this.graph.map(
+        price => 5 + ((price - minValue) * 95) / (maxValue - minValue)
+      );
+    },
+
+
+    loadTikers(){
+      console.log("test")
+      console.log(import.meta.env.VITE_CRYPTOCOMPARE_APIKEY)
     }
+
   }
 };
 </script>
