@@ -1,6 +1,6 @@
 <template>
   <div class="container flex flex-col items-center p-4 mx-auto bg-gray-100">
-    <!-- <div
+    <div v-if="isLoading"
       class="fixed inset-0 z-50 flex items-center justify-center bg-purple-800 w-100 h-100 opacity-80"
     >
       <svg
@@ -23,7 +23,7 @@
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
         ></path>
       </svg>
-    </div> -->
+    </div>
     <div class="container">
       <button @click.stop="loadTikers"> show api</button>
       
@@ -43,25 +43,10 @@
               />
             </div>
             <div class="flex flex-wrap p-1 bg-white rounded-md shadow-md">
-              <span
+              <span v-for="coin in coins"   @click.stop="ticker = coin"
                 class="inline-flex items-center px-2 m-1 text-xs font-medium text-gray-800 bg-gray-300 rounded-md cursor-pointer"
               >
-                BTC
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 text-xs font-medium text-gray-800 bg-gray-300 rounded-md cursor-pointer"
-              >
-                DOGE
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 text-xs font-medium text-gray-800 bg-gray-300 rounded-md cursor-pointer"
-              >
-                BCH
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 text-xs font-medium text-gray-800 bg-gray-300 rounded-md cursor-pointer"
-              >
-                CHD
+                {{coin}}
               </span>
             </div>
             <div class="text-sm text-red-600">Такой тикер уже добавлен</div>
@@ -169,12 +154,40 @@
   </div>
 </template>
 
-<script >
-export default {
+<script>
+
+
+
+export default{
   name: "App",
+
+   
+    async beforeMount()
+    {    
+        const f =  await fetch("https://min-api.cryptocompare.com/data/all/coinlist?summary=true");
+        const data = await f.json();
+        //console.log(data)
+
+        let start = 0
+        for (let key in data.Data){
+          start++
+          if (start>100){
+            this.coins.push(key)
+          }
+          if (this.coins.length>5){
+            return
+          }
+      
+          this.isLoading = false
+         } 
+      
+  }
+  
+	,
 
   data() {
     return {
+      isLoading:true,
       ticker: "default",
       tickers: [
         { name: "DEMO1", price: "-" },
@@ -183,8 +196,11 @@ export default {
       ],
       sel:null,
       graph:[],
+      coins:[]
     };
   },
+
+
 
   methods: {
     add() {
@@ -193,20 +209,42 @@ export default {
         price: "-"
       };
 
+      //console.log("add "+test)
+      //return
+
       this.tickers.push(currentTicker);
       setInterval(async () => {
-        const f = await fetch(
-          `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=${import.meta.env.VITE_CRYPTOCOMPARE_APIKEY}`
-        );
-        const data = await f.json();
-
-        // currentTicker.price =  data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
-        this.tickers.find(t => t.name === currentTicker.name).price =
-          data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
-
-        if (this.sel?.name === currentTicker.name) {
-          this.graph.push(data.USD);
+        var f
+        try {
+          f = await fetch(
+            `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=${import.meta.env.VITE_CRYPTOCOMPARE_APIKEY}`
+          );
+          
+        } catch (error) {
+          console.error("can't load crypto currency prices:  "+error);
+          return
         }
+
+        try{
+
+          const data = await f.json();
+          console.log(data)
+          
+          this.tickers.find(t => t.name === currentTicker.name).price =
+            data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+
+
+          
+          if (this.sel?.name === currentTicker.name) {
+            this.graph.push(data.USD);
+          }
+        } catch (error) {
+          console.error("can't pars data:  "+error);
+          return
+        }
+
+
+
       }, 5000);
       this.ticker = "";
 
@@ -233,11 +271,12 @@ export default {
     loadTikers(){
       console.log("test")
       console.log(import.meta.env.VITE_CRYPTOCOMPARE_APIKEY)
-    }
-
+    },
   }
 };
+
 </script>
-<!-- <style src="./app.css"></style> -->
+
+
 
 
