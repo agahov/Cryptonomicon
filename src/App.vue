@@ -75,11 +75,35 @@
       </section>
 
        <template v-if="tickers.length">
+      
 
       <hr class="w-full my-4 border-t border-gray-600" />
+<div>
+          <button
+            class="inline-flex items-center px-4 py-2 mx-2 my-4 text-sm font-medium leading-4 text-white transition-colors duration-300 bg-gray-600 border border-transparent rounded-full shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            v-if="page > 1"
+            @click="page = page - 1"
+          >
+            Назад
+          </button>
+          <button
+            class="inline-flex items-center px-4 py-2 mx-2 my-4 text-sm font-medium leading-4 text-white transition-colors duration-300 bg-gray-600 border border-transparent rounded-full shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            @click="page = page + 1"
+            v-if="hasNextPage"
+          >
+            Вперед
+          </button>
+          <!-- <div>Фильтр: <input v-model="filter" /></div> -->
+        </div>
+
+          <hr class="w-full my-4 border-t border-gray-600" />
+
+
+
+
       <dl class="grid grid-cols-1 gap-5 mt-5 sm:grid-cols-3">
         <div
-          v-for = "t in tickers"
+          v-for = "t in filteredTickers"
           :key="t.name"
           @click="select(t)"
           :class="{'border-4':sel===t}"
@@ -161,38 +185,71 @@
 export default{
   name: "App",
 
+
+  created(){
+          console.log("... created  ")
+
+    const tickersData = localStorage.getItem("cryptonomicon-list");
+    if (tickersData) {
+      this.tickers = JSON.parse(tickersData);
+      // this.tickers.forEach(ticker => {
+      //   this.subscribeToUpdates(ticker.name);
+      // });
+    }
+
+
+      
+      
+
+
+
+
+  },
    
     async beforeMount()
     {    
-        const f =  await fetch("https://min-api.cryptocompare.com/data/all/coinlist?summary=true");
-        const data = await f.json();
-        //console.log(data)
+      console.log("before mounte  ")
+
+      const f =  await fetch("https://min-api.cryptocompare.com/data/all/coinlist?summary=true");
+      const data = await f.json();
+      
+      console.log(data)
 
         let start = 0
         for (let key in data.Data){
           start++
           if (start>100){
             this.coins.push(key)
-          }
-          if (this.coins.length>5){
-            return
+            if (this.coins.length>5){
+              this.isLoading = false
+              return
+            }
           }
       
-          this.isLoading = false
-         } 
+          
+        } 
+
+      setTimeout(this.isLoading = false,100);
+
+      this.coins.push("BTC", "USDT", "ETH")
+
       
   }
-  
-	,
+  ,
+
+  computed: {
+
+
+  }
+  ,
 
   data() {
     return {
       isLoading:true,
+      page:1,
+      hasNextPage: true,
       ticker: "default",
       tickers: [
-        { name: "DEMO1", price: "-" },
-        { name: "DEMO2", price: "2" },
-        { name: "DEMO3", price: "-" }
       ],
       sel:null,
       graph:[],
@@ -200,54 +257,89 @@ export default{
     };
   },
 
+  computed:{
 
+    filteredTickers:function ()  {
+
+    if (!this.tickers)
+    {return []}
+
+      const start = (this.page - 1) * 6;
+      const end = this.page * 6;
+
+      const filteredTickers = this.tickers.filter(ticker =>
+        ticker.name.includes(this.filter)
+      );
+
+      this.hasNextPage = filteredTickers.length > end;
+
+      return filteredTickers.slice(start, end);
+    },
+ 
+
+   
+
+  },  
 
   methods: {
+
+// filteredTickers:function ()  {
+
+//     if (!this.tickers)
+//     {return []}
+
+//       const start = (this.page - 1) * 6;
+//       const end = this.page * 6;
+
+//       const filteredTickers = this.tickers.filter(ticker =>
+//         ticker.name.includes(this.filter)
+//       );
+
+//       this.hasNextPage = filteredTickers.length > end;
+
+//       return filteredTickers.slice(start, end);
+//     },
+ 
+
+ subscribeToUpdates(tickerName) {
+      setInterval(async () => {
+        const f = await fetch(
+          `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=ce3fd966e7a1d10d65f907b20bf000552158fd3ed1bd614110baa0ac6cb57a7e`
+        );
+        const data = await f.json();
+
+        // currentTicker.price =  data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+        console.log(" subscribeToUpdates") ;
+
+        console.log(data);
+          
+       if (data.USD){
+
+            this.tickers.find(t => t.name === tickerName).price =
+              data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+
+            if (this.sel?.name === tickerName) {
+              this.graph.push(data.USD);
+            }
+          }    
+
+          }, 5000);
+
+        
+      this.ticker = "";
+    },
+
     add() {
       const currentTicker = {
         name: this.ticker,
         price: "-"
       };
 
-      //console.log("add "+test)
-      //return
-
       this.tickers.push(currentTicker);
-      setInterval(async () => {
-        var f
-        try {
-          f = await fetch(
-            `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=${import.meta.env.VITE_CRYPTOCOMPARE_APIKEY}`
-          );
-          
-        } catch (error) {
-          console.error("can't load crypto currency prices:  "+error);
-          return
-        }
+      this.filter = "";
 
-        try{
-
-          const data = await f.json();
-          console.log(data)
-          
-          this.tickers.find(t => t.name === currentTicker.name).price =
-            data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
-
-
-          
-          if (this.sel?.name === currentTicker.name) {
-            this.graph.push(data.USD);
-          }
-        } catch (error) {
-          console.error("can't pars data:  "+error);
-          return
-        }
-
-
-
-      }, 5000);
-      this.ticker = "";
-
+      localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers));
+      this.subscribeToUpdates(currentTicker.name);
     },
 
     handleDelete(tickerToRemove) {
